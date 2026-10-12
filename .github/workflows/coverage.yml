@@ -1,0 +1,121 @@
+name: Rust coverage
+
+on:
+  pull_request:
+    paths:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'crates/**'
+      - 'apps/**'
+      - 'xtask/**'
+      - '.github/workflows/coverage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-coverage-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: Instrumented Rust coverage (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - name: Linux native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libxcursor-dev libxrandr-dev libxi-dev \
+            libgtk-3-dev libfontconfig1-dev pkg-config cmake
+      - name: Install instrumented coverage runner
+        run: cargo install cargo-llvm-cov --locked
+      - name: Run every workspace test under coverage
+        run: cargo llvm-cov --workspace --locked --lcov --output-path coverage.lcov
+      - name: Save machine-readable coverage report
+        run: cargo llvm-cov report --json --output-path coverage.json
+      - name: Print instrumented totals
+        run: |
+          python3 - <<'PY'
+          import json
+          with open("coverage.json", encoding="utf-8") as f:
+              runs = json.load(f)["data"]
+          for index, run in enumerate(runs):
+              print(f"Coverage dataset {index}:")
+              for kind in ("lines", "functions", "branches", "regions"):
+                  item = run["totals"].get(kind)
+                  if item is not None:
+                      print(f"  {kind}: {item['covered']}/{item['count']} ({item['percent']:.2f}%)")
+          PY
+      - name: Enforce measured non-regression baseline
+        run: |
+          python3 - <<'PY'
+          import json
+
+          with open("coverage.json", encoding="utf-8") as source:
+              data = json.load(source)["data"][0]
+
+          # Verified on SHA 1064b65775d4a44c8c08d0c309c8c192088fbdcf.
+          baseline = {
+              "lines": (44634, 55377),
+              "functions": (6181, 7773),
+              "regions": (105728, 134362),
+          }
+          # Also prevent critical modules from quietly regressing while the
+          # aggregate number improves elsewhere. Counts are source lines.
+          groups = {
+              "crates/engine": (23142, 27936),
+              "crates/ui-egui": (6047, 9658),
+              "crates/io": (4003, 4516),
+              "apps/cadcraft-cli": (391, 578),
+          }
+
+          def check(name, actual, previous):
+              covered, count = actual
+              old_covered, old_count = previous
+              if not count or covered * old_count < old_covered * count:
+                  raise SystemExit(
+                      f"coverage regression for {name}: {covered}/{count} "
+                      f"vs baseline {old_covered}/{old_count}"
+                  )
+              print(f"PASS {name}: {covered}/{count} >= {old_covered}/{old_count}")
+
+          for name, reference in baseline.items():
+              item = data["totals"][name]
+              check(name, (item["covered"], item["count"]), reference)
+
+          by_component = {group: [0, 0] for group in groups}
+          for file in data["files"]:
+              marker = "/cadcraft/cadcraft/"
+              if marker not in file["filename"]:
+                  continue
+              path = file["filename"].split(marker, 1)[1]
+              group = "/".join(path.split("/")[:2])
+              if group in by_component:
+                  item = file["summary"]["lines"]
+                  by_component[group][0] += item["covered"]
+                  by_component[group][1] += item["count"]
+
+          for name, reference in groups.items():
+              check(name, by_component[name], reference)
+          PY
+      - name: Upload raw coverage and baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-coverage-linux
+          path: |
+            coverage.lcov
+            coverage.json
+          if-no-files-found: warn
+          retention-days: 30

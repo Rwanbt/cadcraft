@@ -79,7 +79,18 @@ mod native {
             ));
         }
         written.map_err(|e| format!("DWG→DXF: {e}"))?;
-        Ok(add_header_vars(out.buf, &doc.header))
+        // Header repair appends bytes after the capped writer has finished. Account for those
+        // bytes too: the output limit applies to the final DXF, not only to the writer's buffer.
+        let dxf = add_header_vars(out.buf, &doc.header);
+        if dxf.len() > limits.max_dxf_bytes {
+            return Err(format!(
+                "DWG: converting this {} file produced more than {} of drawing data (the limit); \
+                 the file is probably damaged, or uses objects the DWG reader misreads",
+                mb(bytes.len() as u64),
+                mb(limits.max_dxf_bytes as u64)
+            ));
+        }
+        Ok(dxf)
     }
 
     /// Header variables the DWG reader fills in but acadrust's DXF writer (0.6.3) leaves out of
