@@ -17,7 +17,7 @@ fn dwg_conversion_never_returns_more_bytes_than_the_final_limit() {
     let capped = dwg_to_dxf_with(&dwg, Limits { max_dwg_bytes: dwg.len(), max_dxf_bytes: limit });
     assert!(capped.is_err(), "conversion must reject a final DXF larger than {limit} bytes");
 
-    let exact = dwg_to_dxf_with(&dwg, Limits { max_dwg_bytes: dwg.len(), max_dxf_bytes: full.len() })
-        .expect("exact-size cap must allow the full output");
+    let exact =
+        dwg_to_dxf_with(&dwg, Limits { max_dwg_bytes: dwg.len(), max_dxf_bytes: full.len() }).expect("exact-size cap must allow the full output");
     assert_eq!(exact.len(), full.len());
 }
