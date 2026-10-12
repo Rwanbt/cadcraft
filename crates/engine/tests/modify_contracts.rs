@@ -61,12 +61,7 @@ fn multi_copy_uses_original_each_time_and_is_one_undo_step() {
     let handles = response["handles"].as_array().unwrap();
     assert_eq!(handles.len(), 3);
     assert!(handles.iter().all(|v| v.as_str() != Some(h.as_str())));
-    assert_eq!(line_ends(&s), vec![
-        ([0.0, 0.0], [10.0, 0.0]),
-        ([0.0, 2.0], [10.0, 2.0]),
-        ([0.0, 4.0], [10.0, 4.0]),
-        ([0.0, 6.0], [10.0, 6.0]),
-    ]);
+    assert_eq!(line_ends(&s), vec![([0.0, 0.0], [10.0, 0.0]), ([0.0, 2.0], [10.0, 2.0]), ([0.0, 4.0], [10.0, 4.0]), ([0.0, 6.0], [10.0, 6.0]),]);
     let edited = s.doc().unwrap().clone();
     assert!(s.undo().unwrap().is_some(), "a batch COPY must be atomic in undo history");
     assert_eq!(s.doc().unwrap(), &original);
