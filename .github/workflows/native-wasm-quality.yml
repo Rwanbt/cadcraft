@@ -42,7 +42,7 @@ jobs:
           cargo --version
           git rev-parse HEAD
       - name: Real unit, integration and CLI process tests
-        run: cargo test --locked -p cadcraft-geom -p cadcraft-dxf -p cadcraft-doc -p cadcraft-constraints -p cadcraft-dwg -p cadcraft-io -p cadcraft-engine -p cadcraft-mcp -p cadcraft-cli
+        run: cargo test --locked -p cadcraft-geom -p cadcraft-dxf -p cadcraft-doc -p cadcraft-constraints -p cadcraft-dwg -p cadcraft-io -p cadcraft-engine -p cadcraft-mcp -p cadcraft-cli -p cadcraft-ui-egui
 
   web-build:
     name: WASM application compile
