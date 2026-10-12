@@ -15,7 +15,7 @@
 | CAD-ENG-01 | `engine`: drawing commands, state, undo/redo | `crates/engine/src/tests.rs`; `crates/engine/tests/` | complete command contract matrix and concurrency | PARTIAL |
 | CAD-MCP-01 | `mcp`: protocol and command dispatch | `crates/mcp/src/tests.rs`; `crates/mcp/tests/` | protocol error and cancellation matrix | PARTIAL |
 | CAD-CLI-01 | `cadcraft-cli`: real process, MCP and drawing lifecycle | `apps/cadcraft-cli/tests/mcp_connect.rs`; `apps/cadcraft-cli/tests/lifecycle.rs` (real-process lifecycle and error isolation) | native GUI workflow and packaging E2E | PARTIAL |
-| CAD-UI-01 | `ui-egui`: dialogs, controls, layout and focus | `crates/ui-egui/tests/` | native real-window E2E on each OS | PARTIAL |
+| CAD-UI-01 | `ui-egui`: dialogs, controls, layout and focus | `crates/ui-egui/tests/` (including plot-style dialog read-only regression) | native real-window E2E on each OS | PARTIAL |
 | CAD-WEB-01 | `cadcraft-web`: upload, download and WASM interface | `apps/cadcraft-web/src/` | real browser E2E, responsive and JS errors | UNVERIFIED |
 | CAD-DESK-01 | `cadcraft`: install, launch, control server and menus | `apps/cadcraft/src/` | packaged native smoke/E2E and uninstall | UNVERIFIED |
 | CAD-PKG-01 | Packaging and release metadata | [Packaging lint run 38146658224](https://github.com/Rwanbt/cadcraft/actions/runs/38146658224) | actual installers on target OSs | PARTIAL |

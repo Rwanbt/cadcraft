@@ -41,3 +41,16 @@ fn json_calls_never_open_the_dialogs() {
     assert_eq!(d.header.str("CELTYPE", ""), "DASHED");
     assert!(d.table_styles.iter().any(|s| s.name == "Schedule"));
 }
+
+#[test]
+fn plot_style_manager_opens_and_renders_without_changing_the_drawing() {
+    let mut app = CadApp::new(Session::new(), Services::default());
+    let before = app.session.doc().unwrap().clone();
+    app.run("stylesmanager", serde_json::Value::Null).unwrap();
+    assert_eq!(app.ui.dialog.as_deref(), Some("stylesmanager"));
+    let ctx = egui::Context::default();
+    let mut output = ctx.run_ui(Default::default(), |ui| dialogs::show(&mut app, ui.ctx()));
+    output.textures_delta.clear();
+    assert_eq!(app.ui.dialog.as_deref(), Some("stylesmanager"));
+    assert_eq!(app.session.doc().unwrap(), &before, "opening a plot-style dialog is read-only");
+}

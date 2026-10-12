@@ -29,3 +29,7 @@ The Linux report excludes platform-only execution paths (macOS, Windows, FreeBSD
 2. Classify missing lines as testable paths, unsupported platforms, generated code or vendored code; justify all exclusions.
 3. Add targeted, reproducible tests on the highest-risk uncovered format and persistence paths.
 4. Establish a no-regression coverage gate **after** recording the real baseline; do not set a speculative 100% threshold.
+
+## Enforced anti-regression gate
+
+The GitHub Actions LLVM workflow compares line, function and region coverage to the **exact fractions** from run 38269733408, rather than rounding percentages or claiming 100%. It also compares line coverage for the engine, egui UI, file IO, and CLI to the per-component baseline extracted from the same JSON artifact. An uncovered new critical module can therefore no longer be hidden by gains elsewhere. A legitimately changed toolchain or denominator must be investigated and documented before deliberately rebasing the thresholds. Branch coverage is still unavailable (0/0) and cannot be gated.

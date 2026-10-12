@@ -57,6 +57,58 @@ jobs:
                   if item is not None:
                       print(f"  {kind}: {item['covered']}/{item['count']} ({item['percent']:.2f}%)")
           PY
+      - name: Enforce measured non-regression baseline
+        run: |
+          python3 - <<'PY'
+          import json
+
+          with open("coverage.json", encoding="utf-8") as source:
+              data = json.load(source)["data"][0]
+
+          # Verified on SHA 1064b65775d4a44c8c08d0c309c8c192088fbdcf.
+          baseline = {
+              "lines": (44634, 55377),
+              "functions": (6181, 7773),
+              "regions": (105728, 134362),
+          }
+          # Also prevent critical modules from quietly regressing while the
+          # aggregate number improves elsewhere. Counts are source lines.
+          groups = {
+              "crates/engine": (23142, 27936),
+              "crates/ui-egui": (6047, 9658),
+              "crates/io": (4003, 4516),
+              "apps/cadcraft-cli": (391, 578),
+          }
+
+          def check(name, actual, previous):
+              covered, count = actual
+              old_covered, old_count = previous
+              if not count or covered * old_count < old_covered * count:
+                  raise SystemExit(
+                      f"coverage regression for {name}: {covered}/{count} "
+                      f"vs baseline {old_covered}/{old_count}"
+                  )
+              print(f"PASS {name}: {covered}/{count} >= {old_covered}/{old_count}")
+
+          for name, reference in baseline.items():
+              item = data["totals"][name]
+              check(name, (item["covered"], item["count"]), reference)
+
+          by_component = {group: [0, 0] for group in groups}
+          for file in data["files"]:
+              marker = "/cadcraft/cadcraft/"
+              if marker not in file["filename"]:
+                  continue
+              path = file["filename"].split(marker, 1)[1]
+              group = "/".join(path.split("/")[:2])
+              if group in by_component:
+                  item = file["summary"]["lines"]
+                  by_component[group][0] += item["covered"]
+                  by_component[group][1] += item["count"]
+
+          for name, reference in groups.items():
+              check(name, by_component[name], reference)
+          PY
       - name: Upload raw coverage and baseline
         if: always()
         uses: actions/upload-artifact@v4
