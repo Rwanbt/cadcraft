@@ -14,7 +14,7 @@
 | CAD-IO-01 | `io`: DXF/DWG save and reload, SVG/PNG/PDF export | `crates/io/src/tests.rs`; `crates/io/tests/` | full E2E file lifecycle and reference corpora | PARTIAL |
 | CAD-ENG-01 | `engine`: drawing commands, state, undo/redo | `crates/engine/src/tests.rs`; `crates/engine/tests/` | complete command contract matrix and concurrency | PARTIAL |
 | CAD-MCP-01 | `mcp`: protocol and command dispatch | `crates/mcp/src/tests.rs`; `crates/mcp/tests/` | protocol error and cancellation matrix | PARTIAL |
-| CAD-CLI-01 | `cadcraft-cli`: real process and MCP connection | `apps/cadcraft-cli/tests/mcp_connect.rs` | file-open/edit/save/export CLI E2E | PARTIAL |
+| CAD-CLI-01 | `cadcraft-cli`: real process, MCP and drawing lifecycle | `apps/cadcraft-cli/tests/mcp_connect.rs`; `apps/cadcraft-cli/tests/lifecycle.rs` (new) | native GUI workflow and packaging E2E | PARTIAL |
 | CAD-UI-01 | `ui-egui`: dialogs, controls, layout and focus | `crates/ui-egui/tests/` | native real-window E2E on each OS | PARTIAL |
 | CAD-WEB-01 | `cadcraft-web`: upload, download and WASM interface | `apps/cadcraft-web/src/` | real browser E2E, responsive and JS errors | UNVERIFIED |
 | CAD-DESK-01 | `cadcraft`: install, launch, control server and menus | `apps/cadcraft/src/` | packaged native smoke/E2E and uninstall | UNVERIFIED |
