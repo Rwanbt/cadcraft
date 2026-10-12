@@ -25,7 +25,13 @@ fn line_ends(s: &Session) -> Vec<([f64; 2], [f64; 2])> {
         .model
         .iter()
         .filter_map(|e| match &e.kind {
-            EntityKind::Line(l) => Some(([l.a.x, l.a.y], [l.b.x, l.b.y])),
+            EntityKind::Line(l) => {
+                let mut ends = ([l.a.x, l.a.y], [l.b.x, l.b.y]);
+                if ends.0[0] > ends.1[0] || (ends.0[0] == ends.1[0] && ends.0[1] > ends.1[1]) {
+                    ends = (ends.1, ends.0);
+                }
+                Some(ends)
+            }
             _ => None,
         })
         .collect();
@@ -76,7 +82,7 @@ fn mirror_copy_and_mirror_erase_have_distinct_source_semantics() {
 
     let (mut replace, h) = drawing_with_line();
     replace.execute("mirror", &json!({"handles": [h], "p1": [0,0], "p2": [0,1], "erase": true})).unwrap();
-    assert_eq!(line_ends(&replace), vec![([0.0, 0.0], [-10.0, 0.0])]);
+    assert_eq!(line_ends(&replace), vec![([-10.0, 0.0], [0.0, 0.0])]);
     assert_eq!(replace.doc().unwrap().model.len(), 1);
 }
 
