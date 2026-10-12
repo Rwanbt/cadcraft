@@ -27,14 +27,8 @@ fn fixed_seed_affine_inverse_reverses_a_diverse_set_of_transforms() {
         let transform = Mat3::translate(translation).then(Mat3::rotate(angle)).then(Mat3::scale(sx, sy));
         let inverse = transform.inverse().expect("well-conditioned affine transform is invertible");
         for p in points {
-            assert!(
-                inverse.apply(transform.apply(p)).near(p, 1e-9),
-                "failed for transform {transform:?}, point {p:?}"
-            );
-            assert!(
-                transform.apply(inverse.apply(p)).near(p, 1e-9),
-                "right inverse failed for transform {transform:?}, point {p:?}"
-            );
+            assert!(inverse.apply(transform.apply(p)).near(p, 1e-9), "failed for transform {transform:?}, point {p:?}");
+            assert!(transform.apply(inverse.apply(p)).near(p, 1e-9), "right inverse failed for transform {transform:?}, point {p:?}");
         }
     }
 }

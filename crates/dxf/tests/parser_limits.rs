@@ -80,7 +80,6 @@ fn invalid_ascii_group_code_reports_its_line() {
     assert!(matches!(result, Err(DxfError::BadCode { line: 1, .. })));
 }
 
-
 /// A fixed-seed stream of finite typed values is an independent serialization contract: DXF
 /// ASCII must preserve each tag's code and typed value through write and read.
 #[test]

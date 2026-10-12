@@ -76,7 +76,6 @@ fn cli_creates_saves_reopens_edits_and_exports_a_real_drawing() {
     assert!(svg_data.contains("<svg"), "output must be an SVG document");
 }
 
-
 #[test]
 fn invalid_command_json_does_not_create_an_output_drawing() {
     let dir = TempDir(std::env::temp_dir().join(format!("cadcraft-cli-invalid-json-{}", std::process::id())));
