@@ -1,0 +1,67 @@
+# Native headless contracts on supported desktop OSes, plus a real WebAssembly build.
+# Does not use release signing credentials, GUI automation or proprietary fixtures.
+name: Native and WASM quality
+
+on:
+  pull_request:
+    paths:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'crates/**'
+      - 'apps/**'
+      - '.github/workflows/native-wasm-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-wasm-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-headless:
+    name: Headless contracts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15]
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: headless-${{ matrix.os }}
+      - name: Record toolchain and source revision
+        run: |
+          rustc --version
+          cargo --version
+          git rev-parse HEAD
+      - name: Real unit, integration and CLI process tests
+        run: cargo test --locked -p cadcraft-geom -p cadcraft-dxf -p cadcraft-doc -p cadcraft-constraints -p cadcraft-dwg -p cadcraft-io -p cadcraft-engine -p cadcraft-mcp -p cadcraft-cli -p cadcraft-ui-egui
+
+  web-build:
+    name: WASM application compile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: wasm-app
+      - name: Record toolchain and source revision
+        run: |
+          rustc --version
+          cargo --version
+          git rev-parse HEAD
+      - name: Check actual CADCraft web application
+        run: cargo check --locked --target wasm32-unknown-unknown -p cadcraft-web
