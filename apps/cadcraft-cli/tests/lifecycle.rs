@@ -75,3 +75,42 @@ fn cli_creates_saves_reopens_edits_and_exports_a_real_drawing() {
     let svg_data = std::fs::read_to_string(&svg).expect("SVG export exists");
     assert!(svg_data.contains("<svg"), "output must be an SVG document");
 }
+
+
+#[test]
+fn invalid_command_json_does_not_create_an_output_drawing() {
+    let dir = TempDir(std::env::temp_dir().join(format!("cadcraft-cli-invalid-json-{}", std::process::id())));
+    std::fs::create_dir_all(&dir.0).expect("create isolated temp directory");
+    let target = dir.0.join("must-not-exist.dxf");
+    let result = Command::new(env!("CARGO_BIN_EXE_cadcraft-cli"))
+        .arg("run")
+        .arg("--metric")
+        .arg("--cmd")
+        .arg("circle {invalid JSON")
+        .arg("--save")
+        .arg(&target)
+        .output()
+        .expect("spawn CLI");
+    assert!(!result.status.success(), "malformed command JSON must fail");
+    assert!(!target.exists(), "a failed command must not create an apparently valid drawing");
+    assert!(String::from_utf8_lossy(&result.stderr).contains("--cmd circle"));
+}
+
+#[test]
+fn non_finite_export_window_does_not_create_an_output_file() {
+    let dir = TempDir(std::env::temp_dir().join(format!("cadcraft-cli-invalid-window-{}", std::process::id())));
+    std::fs::create_dir_all(&dir.0).expect("create isolated temp directory");
+    let target = dir.0.join("must-not-exist.svg");
+    let result = Command::new(env!("CARGO_BIN_EXE_cadcraft-cli"))
+        .arg("run")
+        .arg("--sample")
+        .arg("--export")
+        .arg(&target)
+        .arg("--window")
+        .arg("0,0,NaN,10")
+        .output()
+        .expect("spawn CLI");
+    assert!(!result.status.success(), "non-finite framing must fail");
+    assert!(!target.exists(), "a rejected window must not leave an invalid export");
+    assert!(String::from_utf8_lossy(&result.stderr).contains("--window"));
+}

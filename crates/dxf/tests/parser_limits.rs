@@ -79,3 +79,58 @@ fn invalid_ascii_group_code_reports_its_line() {
     let result = parse(b"invalid\nvalue\n0\nEOF\n");
     assert!(matches!(result, Err(DxfError::BadCode { line: 1, .. })));
 }
+
+
+/// A fixed-seed stream of finite typed values is an independent serialization contract: DXF
+/// ASCII must preserve each tag's code and typed value through write and read.
+#[test]
+fn fixed_seed_ascii_tag_roundtrips_are_byte_reproducible() {
+    fn next(state: &mut u64) -> u64 {
+        *state ^= *state >> 12;
+        *state ^= *state << 25;
+        *state ^= *state >> 27;
+        state.wrapping_mul(0x2545_F491_4F6C_DD1D)
+    }
+
+    for seed in [1_u64, 0x9E37_79B9_7F4A_7C15, 0xFEED_BEEF_CAFE_1234] {
+        let mut rng = seed;
+        let mut tags = Vec::new();
+        for index in 0..256 {
+            let n = next(&mut rng);
+            let tag = match index % 7 {
+                0 => Tag::f(10, (n % 100_000) as f64 / 8.0 - 5_000.0),
+                1 => Tag::i(62, (n % 256) as i64),
+                2 => Tag::i(90, (n % 100_000) as i64),
+                3 => Tag::i(160, (n % 1_000_000) as i64),
+                4 => Tag::new(290, Value::Bool(n & 1 == 1)),
+                5 => Tag::new(310, Value::Hex(format!("{:04X}", n as u16))),
+                _ => Tag::s(1, if n & 1 == 0 { "ASCII" } else { "Café ▵ 😀" }),
+            };
+            tags.push(tag);
+        }
+        tags.push(Tag::s(0, "EOF"));
+        let encoded = write_ascii(&tags);
+        assert!(encoded.is_ascii(), "seed {seed}: DXF ASCII output contains non-ASCII bytes");
+        assert_eq!(write_ascii(&tags), encoded, "seed {seed}: writer is nondeterministic");
+        assert_eq!(parse(encoded.as_bytes()).unwrap(), tags, "seed {seed}: DXF roundtrip changed the tags");
+    }
+}
+
+/// Mutate every input byte of a known-small binary DXF without external fuzz services.
+/// Valid fragments may parse successfully; they must never exceed the fixed tag limit,
+/// crash, or return different results for identical bytes.
+#[test]
+fn binary_bit_flip_replay_is_deterministic_and_memory_bounded() {
+    let original = binary_fixture();
+    for byte_index in 0..original.len() {
+        let mut bytes = original.clone();
+        bytes[byte_index] ^= 0x80;
+        let one = std::panic::catch_unwind(|| parse_with_limit(&bytes, 3))
+            .unwrap_or_else(|_| panic!("DXF parser panicked after bit flip at byte {byte_index}"));
+        let two = parse_with_limit(&bytes, 3);
+        assert_eq!(format!("{one:?}"), format!("{two:?}"), "byte {byte_index}: inconsistent parser result");
+        if let Ok(tags) = one {
+            assert!(tags.len() <= 3, "byte {byte_index}: parser ignored its limit");
+        }
+    }
+}

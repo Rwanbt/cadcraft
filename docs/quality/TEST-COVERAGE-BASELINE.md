@@ -13,7 +13,13 @@
 
 `.github/workflows/coverage.yml` executes `cargo llvm-cov --workspace --locked --lcov --output-path coverage.lcov`, then exports JSON with `cargo llvm-cov report --json --output-path coverage.json`. The job uploads both reports as `rust-coverage-linux`, with 30-day retention.
 
-**Current status:** measurement submitted for PR #1. The coverage percentage must be taken from the successful workflow's JSON artefact, on the **same exact head SHA**. This file deliberately does not claim a percentage before that run succeeds.
+**Verified baseline:** [GitHub Actions coverage run 38269733408](https://github.com/Rwanbt/cadcraft/actions/runs/38269733408), SHA `1064b65775d4a44c8c08d0c309c8c192088fbdcf`, completed successfully on Linux (2026-10-12). The logged LLVM JSON totals are:
+- **Lines:** 44,634 / 55,377 = **80.60%**.
+- **Functions:** 6,181 / 7,773 = **79.52%**.
+- **Regions:** 105,728 / 134,362 = **78.69%**.
+- **Branches:** 0 / 0 (not instrumented; **not** proof of zero coverage).
+- [Rust quality run 38269733463](https://github.com/Rwanbt/cadcraft/actions/runs/38269733463), same SHA: **931 tests passed, 0 failed, 0 ignored**.
+- LCOV and JSON were uploaded in the `rust-coverage-linux` artifact. This is an actual instrumented Linux baseline; it is **not** a statement of complete product coverage.
 
 The Linux report excludes platform-only execution paths (macOS, Windows, FreeBSD, wasm and native UI automation). Do not treat it as cross-platform or whole-product proof.
 
